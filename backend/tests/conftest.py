@@ -1,29 +1,24 @@
 import os
 import pytest
 from fastapi.testclient import TestClient
-from motor.motor_asyncio import AsyncIOMotorClient
-from pymongo import MongoClient
-from app import app  # Assurez-vous que le nom du fichier est correct
-
-# Configuration de la base de données de test
-TEST_MONGO_URL = os.environ.get("TEST_MONGO_URL", "mongodb://localhost:27017")
-TEST_DB_NAME = "cars_test_db"
+import mongomock
+from unittest.mock import patch
+from app import app
 
 @pytest.fixture
 def client():
     """Fixture for the FastAPI TestClient"""
-    client = TestClient(app)  # Modifié ici - n'utilise plus le context manager
-    yield client
+    with TestClient(app) as client:
+        yield client
 
-@pytest.fixture(scope="function")
-def mongodb():
-    """Fixture for a MongoDB client connected to the test database"""
-    client = MongoClient(TEST_MONGO_URL)
-    db = client[TEST_DB_NAME]
-    yield db
-    # Clean up after the test
-    client.drop_database(TEST_DB_NAME)
-    client.close()
+@pytest.fixture
+def mock_mongodb():
+    """Fixture providing a mock MongoDB client"""
+    client = mongomock.MongoClient()
+    db = client["cars_test_db"]
+    # Create the cars collection
+    db.create_collection("cars")
+    return db
 
 @pytest.fixture
 def sample_cars_data():
@@ -49,8 +44,12 @@ def sample_cars_data():
     ]
 
 @pytest.fixture
-async def populated_db(mongodb, sample_cars_data):
-    """Fixture providing a database populated with sample data"""
+def populated_mock_db(mock_mongodb, sample_cars_data):
+    """Fixture providing a mock database populated with sample data"""
     # Insert sample cars
-    mongodb.cars.insert_many(sample_cars_data)
-    yield mongodb
+    mock_mongodb.cars.insert_many(sample_cars_data)
+    
+    # Set up the app to use our mock database
+    app.mongodb = mock_mongodb
+    
+    yield mock_mongodb
