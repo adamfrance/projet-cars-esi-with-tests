@@ -3,7 +3,7 @@ import pytest
 from fastapi.testclient import TestClient
 from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo import MongoClient
-from main import app
+from app import app  # Assurez-vous que le nom du fichier est correct
 
 # Configuration de la base de données de test
 TEST_MONGO_URL = os.environ.get("TEST_MONGO_URL", "mongodb://localhost:27017")
@@ -12,13 +12,8 @@ TEST_DB_NAME = "cars_test_db"
 @pytest.fixture
 def client():
     """Fixture for the FastAPI TestClient"""
-    with TestClient(app) as test_client:
-        # Set the test database
-        app.mongodb_client = AsyncIOMotorClient(TEST_MONGO_URL)
-        app.mongodb = app.mongodb_client[TEST_DB_NAME]
-        yield test_client
-        # Clean up after the test
-        app.mongodb_client.close()
+    client = TestClient(app)  # Modifié ici - n'utilise plus le context manager
+    yield client
 
 @pytest.fixture(scope="function")
 def mongodb():
