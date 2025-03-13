@@ -1,0 +1,65 @@
+services:
+  mongo:
+    image: "mongo:6"
+    container_name: mongo_db
+    command: ["mongod", "--bind_ip_all", "--port", "27017"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./data/mongo:/data/db
+    networks:
+      - app-network
+    healthcheck:
+      test: mongosh --eval 'db.runCommand("ping").ok' --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  mongo-import:
+    build:
+      context: ./backend
+    container_name: mongo_import
+    depends_on:
+      mongo:
+        condition: service_healthy
+    env_file:
+      - ./backend/.env
+    networks:
+      - app-network
+    command: python importScript.py
+
+  backend:
+    build:
+      context: ./backend
+    container_name: python_api
+    ports:
+      - "5005:5000"
+    depends_on:
+      - mongo-import
+    env_file:
+      - ./backend/.env
+    networks:
+      - app-network
+    command: >
+      sh -c "
+        echo 'Waiting for MongoDB...' &&
+        sleep 5 &&
+        python app.py
+      "
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: react_app
+    ports:
+      - "3005:3000"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

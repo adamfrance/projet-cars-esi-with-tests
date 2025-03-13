@@ -1,0 +1,10 @@
+
+
+lancement-compose:
+  tags:
+    - mac-perso-shell
+  script:
+    - docker compose up -d
+  
+
+  
