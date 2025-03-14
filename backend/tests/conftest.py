@@ -1,24 +1,18 @@
-import os
 import pytest
 from fastapi.testclient import TestClient
 import mongomock
-from unittest.mock import patch
-from app import app
+from app_test import app  # Import the test app
 
 @pytest.fixture
 def client():
     """Fixture for the FastAPI TestClient"""
-    with TestClient(app) as client:
-        yield client
+    return TestClient(app)
 
 @pytest.fixture
 def mock_mongodb():
     """Fixture providing a mock MongoDB client"""
-    client = mongomock.MongoClient()
-    db = client["cars_test_db"]
-    # Create the cars collection
-    db.create_collection("cars")
-    return db
+    # Create and return a mock database
+    return app.mongodb
 
 @pytest.fixture
 def sample_cars_data():
@@ -39,17 +33,19 @@ def sample_cars_data():
             "price": 18000,
             "km": 30000,
             "cm3": 1600
-        },
-        # Add more sample cars as needed
+        }
     ]
 
 @pytest.fixture
 def populated_mock_db(mock_mongodb, sample_cars_data):
     """Fixture providing a mock database populated with sample data"""
+    # Clear existing data
+    mock_mongodb.cars.delete_many({})
+    
     # Insert sample cars
     mock_mongodb.cars.insert_many(sample_cars_data)
     
-    # Set up the app to use our mock database
-    app.mongodb = mock_mongodb
-    
     yield mock_mongodb
+    
+    # Clean up
+    mock_mongodb.cars.delete_many({})
