@@ -1,7 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 import mongomock
-from app_test import app  # Import the test app
+from app_test import app
 
 @pytest.fixture
 def client():
@@ -11,7 +11,7 @@ def client():
 @pytest.fixture
 def mock_mongodb():
     """Fixture providing a mock MongoDB client"""
-    # Create and return a mock database
+    # Return the mongodb instance from the app
     return app.mongodb
 
 @pytest.fixture
