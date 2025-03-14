@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 import mongomock
-from routers.cars import router as cars_router
+from routers.cars_test import router as cars_router
 
 # CORS middleware
 middleware = [
